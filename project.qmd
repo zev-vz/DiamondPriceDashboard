@@ -17,15 +17,13 @@ install.packages("glmnet")
 
 ## Introduction
 
-For our project, we sought to do something that would let us integrate data visualization, data science models, and dashboards. These were the parts that we loved the most of anything we worked on in class and it made sense to combine them together.
-
-We went look looking for a helpful dataset already within R (while we could theoretically used APIs or webscraping to get data, we preferred not to). We came across the diamonds datset and quickly realized that it was perfect for what we wanted to do.
+For the project, I sought to do something that would let me integrate data visualization, data science models, and dashboards.
 
 R's diamonds dataset - tucked away in the ggplot2 package - contains the sale information of 53,940 different diamonds. Each sale contains information on a diamond's price (in USD), size (in carats), length, width, height, cut (a qualitative and cardinal measure), color, and clarity.
 
-First we decided to explore our data to understand what it looked like and to figure out what was most valuable to do with it. We decided to focus our exploratory analysis on patterns in price, color, cut, carats, and clarity as well as regressions between price and these specific variables.
+First I explored our data to understand what it looked like and to figure out what was most valuable to do with it. I focused my exploratory analysis on patterns in price, color, cut, carats, and clarity as well as regressions between price and these specific variables.
 
-The end result of this exploratory analysis were that there were a number of interesting patterns in the attributes of diamonds sold on the market. However, the most valuable (and interesting) thing was that a simple regression built with just four variables had a remarkable R\^2 of around 91%. This meant we could use our data to provide phenomenal predictive power. And each of the regression models we tested - which allowed us to envision different relationships and account for things like covariance - had a slightly different perspective.
+The end result of this exploratory analysis was that there were a number of interesting patterns in the attributes of diamonds sold on the market. However, the most valuable (and interesting) thing was that a simple regression built with just four variables had a remarkable R\^2 of around 91%. This meant I could use the data to provide phenomenal predictive power. And each of the regression models I tested - which allowed us to envision different relationships and account for things like covariance - had a slightly different perspective.
 
 Seeing this, it felt right to focus on creating an interactive visual display using a dashboard to give people information on the price of a specific diamond (as well as some other statistics for diamonds of this type).
 
@@ -120,18 +118,18 @@ print(r2_results)
 
 ## Building the Dashboard
 
-After settling on a dashboard for predicting the price of diamonds, we thought about what this dashboard should look like. Our central idea was that individuals should be able to input data to get a price as close to their situation as possible (meaning they should be able input carat, cut, color, and clarity.) We also wanted to help them understand the general data they were looking at, as we knew that just getting a dollar value was not the most helpful. As a result, we decided that rather than just getting an outputted number, our users should get the R\^2 value of the model they picked, the scatterplot itself, see where their point is within said scatterplot, and see the regression line.
+After settling on a dashboard for predicting the price of diamonds, I thought about what this dashboard should look like. My central idea was that individuals should be able to input data to get a price as close to their situation as possible (meaning they should be able input carat, cut, color, and clarity.) I also wanted to help them understand the general data they were looking at, as I knew that just getting a dollar value would not be the most helpful. As a result, I decided that rather than just getting an outputted number, our users should get the R\^2 value of the model they picked, the scatterplot itself, see where their point is within said scatterplot, and see the regression line.
 
-We decided to include each of the five regressions as they were relatively similar in predictive power and could satisfy different needs/concerns of the user. The straightforward linear model gave them an idea of what their diamond was worth, while our Ridge, Lasso, and Elastic Net allowed them to avoid potential overfitting (if they were afraid of them.) And a polynomial model let them see how a different approach to the data changed the price.
+I decided to include each of the five regressions as they were relatively similar in predictive power and could satisfy different needs/concerns of the user. The straightforward linear model gave them an idea of what their diamond was worth, while our Ridge, Lasso, and Elastic Net allowed them to avoid potential overfitting (if they were afraid of them.) And a polynomial model let them see how a different approach to the data changed the price.
 
-To build our dashboard, we wound up taking an iterative approach that focused on building up our individual components and then stitching them together. First, we selected and constructed our different regressions and data visualizations as they were the basis of the entire dashboard. This was primarily regressions, though we also needed a scatterplot, labeled points, and a line.
+To build our dashboard, I wound up taking an iterative approach that focused on building up our individual components and then stitching them together. First, I selected and constructed our different regressions and data visualizations as they were the basis of the entire dashboard. This was primarily regressions, though I also needed a scatterplot, labeled points, and a line.
 
-After this, we identified the different filters and functions we would need to handle all our desired outputs and built them one by one. First, we built something that filtered all of our data according to specifications. Then we built a different function that would construct lines and other features from key inputs and another function that would extract R\^2.
+After this, I identified the different filters and functions I would need to handle all our desired outputs and built them one by one. First, I built something that filtered all of our data according to specifications. Then I built a different function that would construct lines and other features from key inputs and another function that would extract R\^2.
 
-With all the sub components built and ready, we stitched them together in a ShinyR database, using reactive functions and buttons to trigger most of them and finding opportunities to reduce code length and complexity whenever possible. We also stylized our overall dashboard using cards, HTML code (that we wrote with help from ChatGPT), and other odds and ends.
+With all the sub components built and ready, I stitched them together in a ShinyR database, using reactive functions and buttons to trigger most of them and finding opportunities to reduce code length and complexity whenever possible. I also stylized our overall dashboard using cards, HTML code and other odds and ends.
 
 ```{r,echo=FALSE, message=FALSE, warning=FALSE}
-#We decided to make this a standalone chunk even though we could have relied on the previous chunk to make it more accessible and usable to a wider range of audiences.
+#I decided to make this a standalone chunk even though I could have relied on the previous chunk to make it more accessible and usable to a wider range of audiences.
 # Loading different libraries that are necessary for the dashboard.
 library(shiny)
 library(ggplot2)
@@ -211,7 +209,6 @@ ui <- fluidPage(
   #Title panel
   titlePanel("What's My Diamond Worth?", windowTitle = "Diamond Price Predictor"),
   tags$head(
-    #HTML we wrote with help from ChatGPT to make our board more stylish
     tags$style(HTML("
       body {
         font-family: 'Arial', sans-serif;
@@ -273,7 +270,7 @@ ui <- fluidPage(
     "))
   ),
 
-  #Creatoing a layout for our sidebar, complete with choices and inputs pulled from our data to allow us to take inputs from users
+  #Creating a layout for our sidebar, complete with choices and inputs pulled from our data to allow us to take inputs from users
   sidebarLayout(
     sidebarPanel(
       class = "panel",
@@ -445,19 +442,19 @@ shinyApp(ui = ui, server = server)
 
 ## Methods / Implementation
 
-When building our dashboard, we chose to rely on Shiny as it was something had been taught in class and were familiar with. Regression models, too, were something primarily chosen because they were familiar enough to work with yet remained novel. The various bells and whistles were to make our dashboard more engaging and educational.
+When building our dashboard, I chose to rely on Shiny as it was familiar to me. Regression models, too, were something primarily chosen because they were familiar enough to work with yet remained novel. The various bells and whistles were to make the dashboard more engaging and educational.
 
-We also decided to use the built in linear regression models from R and the other 4 models from the glmnet package.
+I also decided to use the built in linear regression models from R and the other 4 models from the glmnet package.
 
-As soon as the code starts to run we created a model matrix x with all the predictors, and a response vectore y for the estimated price of a diamond. Then we fit the regression models for an Ordinary least squares (linear), Polynomial (adds a carat² term), Ridge (L2-penalized), Lasso (L1-penalized), and Elastic Net (mix of L1 & L2) model types. Next we got the r^2 or psuedo r^2 values. Then we stored all of the models r^2 values. Next we created a helper function for the card layout that would desplay all the helper information. Next we build the ui with a side bar layout containing all the needed inputs including a slider for a confidence interval that only appeared if you were using OLS or Polynomial models. Then when “Predict Price” is clicked, packages the user’s specs into a tiny data frame, chooses the right model, and returns a single price prediction. When this happens we also create a fitting grid by generating a sequence of carat values (0.2–5.0), using the selected model to predict over that grid (with prediction intervals for lm’s), and then building a data frame (df_line) for plotting the fit and ribbon. Lastly our site renders the the plot output with data point and line of best fit.
+As soon as the code starts to run, it creates a model matrix x with all the predictors, and a response vectore y for the estimated price of a diamond. Then it fit sthe regression models for an Ordinary least squares (linear), Polynomial (adds a carat² term), Ridge (L2-penalized), Lasso (L1-penalized), and Elastic Net (mix of L1 & L2) model types. Next it gets the r^2 or psuedo r^2 values. Then it stores all of the models r^2 values before creating and using a helper function for the card layout that would display all the helper information and building the ui with a side bar layout containing all the needed inputs including a slider for a confidence interval that only appeared if you were using OLS or Polynomial models. Then when “Predict Price” is clicked, packages the user’s specs into a tiny data frame, chooses the right model, and returns a single price prediction. When this happens the code also creates a fitting grid by generating a sequence of carat values (0.2–5.0), using the selected model to predict over that grid (with prediction intervals for lm’s), and then building a data frame (df_line) for plotting the fit and ribbon. Lastly our site renders the the plot output with data point and line of best fit.
 
-We decided to put our entire dashboard inside of a single chunk (rather an R file or some other form of storage) so that it was easily accessible within our report. To reproduce our results/to see our work, you can run either the chunk we used to test various things or the dashboard itself.
+I decided to put our entire dashboard inside of a single chunk (rather an R file or some other form of storage) so that it was easily accessible. To reproduce our results/to see our work, you can run either the chunk I used to test various things or the dashboard itself.
 
 
 ## Discussion & Conclusion
 
-We envision our project having a number of helpful use cases and as a way to bring more clarity to the diamond market. For occasional people who don't usually engage in the diamond market but may do so occasionally (one or two times in their lifetime), this model helps them in negotiations. With a better understanding of what a diamond should be worth, they can counter the informational advantages that would previously put them at a disadvantage in the market. For example, something seeking to sell a diamond they inherited or a person looking to propose to their partner can get a better understanding of what they should ask for or what they should offer respectively. Even for individuals with more experience transacting in the diamond market (i.e., diamond merchants and jewelers), having a predictive model on hand can help them make better offers and make wiser choices of what prices to buy and sell for. Overall, our predictive model should be a powerful source of information that corrects potential flaws in the market.
+I envision this project having a number of helpful use cases and as a way to bring more clarity to the diamond market. For occasional shoppers who don't usually engage in the diamond market but may do so occasionally (one or two times in their lifetime), this model helps them in negotiations. With a better understanding of what a diamond should be worth, they can counter the informational advantages that would previously put them at a disadvantage in the market. For example, something seeking to sell a diamond they inherited or a person looking to propose to their partner can get a better understanding of what they should ask for or what they should offer respectively. Even for individuals with more experience transacting in the diamond market (i.e., diamond merchants and jewelers), having a predictive model on hand can help them make better offers and make wiser choices of what prices to buy and sell for. Overall, my predictive model should be a powerful source of information that corrects potential flaws in the market.
 
-Our analysis (and the model itself) shows that the vast majority of variety in diamond prices (about 90% across our five models) can be attributed to four simple factors: carat (size), color, cut, and clarity. This is incredibly valuable for anyone interested in understanding what affects the prices of diamonds and could even be extrapolated to help understand the pricing of jewelry as a whole (or anything that contains diamonds) by helping them understand some of the stuff influencing pricing. It also has value as something to help us understand what influences pricing.
+My analysis (and the model itself) shows that the vast majority of variety in diamond prices (about 90% across our five models) can be attributed to four simple factors: carat (size), color, cut, and clarity. This is incredibly valuable for anyone interested in understanding what affects the prices of diamonds and could even be extrapolated to help understand the pricing of jewelry as a whole (or anything that contains diamonds) by helping them understand some of the factors influencing pricing. It also has value as something to help us understand what influences pricing.
 
-In the end, we chose to make this because we were interested in the intersection of data science, data communication, and economics/business and saw this as the perfect way to work at the intersection of those interests while using a dataset that was accessible to everyone. It taught us a lot about the best practices in data communication (we spent hours experimenting with different dashboards) and data analysis (we spent a long time looking at and trying out different visualizations, and regressions). It also taught us a bunch of about best practices in writing and documenting code, in collaborating on data-based projects, and in product (and project) management.
+In the end, I chose to make this because I was interested in the intersection of data science, data communication, and economics/business and saw this as the perfect way to work at the intersection of those interests while using a dataset that was accessible to everyone. It taught me a lot about the best practices in data communication (I spent hours experimenting with different dashboards) and data analysis (I spent a long time looking at and trying out different visualizations, and regressions). It also taught me more about best practices in writing and documenting code and in product (and project) management.
