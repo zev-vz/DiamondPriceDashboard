@@ -1,0 +1,310 @@
+#All of the code necessary to make the dashboard run, placed outside of the quarto
+
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+install.packages("glmnet")
+
+#Loading Libraries
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+library(caret)
+library(bslib)
+
+{r,message=FALSE, warning=FALSE}
+
+# Loading the diamonds dataset
+data("diamonds")
+diamonds_named <- diamonds
+
+# Preparing the matrix to fit the glmnet models
+x <- model.matrix(price ~ cut + color + clarity + carat, data = diamonds_named)[, -1]
+y <- diamonds_named$price
+
+#Creating the linear model
+lm_model <- lm(price ~ cut + color + clarity + carat, data = diamonds_named)
+lm_r2 <- summary(lm_model)$r.squared
+
+#Creating the Polynomial regression model (degree 2 on carat)
+diamonds_named$carat2 <- diamonds_named$carat^2
+poly_model <- lm(price ~ cut + color + clarity + carat + carat2, data = diamonds_named)
+poly_r2 <- summary(poly_model)$r.squared
+
+#Creating a Ridge regression model
+ridge_model <- cv.glmnet(x, y, alpha = 0)
+ridge_preds <- predict(ridge_model, newx = x, s = "lambda.min")
+ridge_r2 <- 1 - sum((y - ridge_preds)^2) / sum((y - mean(y))^2)
+
+#Creating a Lasso regression model
+lasso_model <- cv.glmnet(x, y, alpha = 1)
+lasso_preds <- predict(lasso_model, newx = x, s = "lambda.min")
+lasso_r2 <- 1 - sum((y - lasso_preds)^2) / sum((y - mean(y))^2)
+
+#Creating an Elastic Net regression model
+elastic_net_model <- cv.glmnet(x, y, alpha = 0.5)
+elastic_preds <- predict(elastic_net_model, newx = x, s = "lambda.min")
+elastic_r2 <- 1 - sum((y - elastic_preds)^2) / sum((y - mean(y))^2)
+
+
+# stash them in a named list for easy UI display
+r2_values <- list(
+  "Linear Regression"     = lm_r2,
+  "Polynomial Regression" = poly_r2,
+  "Ridge Regression"      = ridge_r2,
+  "Lasso Regression"      = lasso_r2,
+  "Elastic Net"           = elastic_r2
+)
+
+#Shiny UI helper function to make it easier to create all of the cards.
+
+card_layout <- function(name, text, img) {
+  #Specifying dimensions and other key features
+  card(
+   layout_column_wrap(
+    width = 1/2, 
+    responsive = TRUE,
+    card_body(
+      tags$p(tags$strong(name), text)
+    ), 
+    img(src = img, style = "width:100%; height:auto;")
+  ), 
+  class = "mb-4"
+ )
+}
+
+
+
+#Creating the UI
+
+ui <- fluidPage(
+  #Title panel
+  titlePanel("What's My Diamond Worth?", windowTitle = "Diamond Price Predictor"),
+  tags$head(
+    tags$style(HTML("
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f9;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .panel {
+        background-color: white;
+        padding: 20px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+      .btn-primary {
+        background-color: #007BFF;
+        color: white;
+        border: none;
+      }
+      .btn-primary:hover {
+        background-color: #0056b3;
+      }
+      h1 {
+        font-size: 30px;
+        font-weight: 700;
+        color: #2c3e50;
+      }
+      h3 {
+        font-size: 22px;
+        color: #34495e;
+      }
+      .text-muted {
+        color: #7f8c8d;
+      }
+      .output {
+        margin-top: 20px;
+        font-size: 18px;
+        color: #2c3e50;
+      }
+      .predictionPlot {
+        width: 100%;
+        max-height: 500px;
+        margin-top: 20px;
+      }
+      .card {
+        padding: 15px;
+        border: 1px solid #e1e1e1;
+        border-radius: 8px;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .card-header {
+        font-weight: bold;
+        background-color: #f8f8f8;
+        padding: 10px;
+      }
+    "))
+  ),
+
+  #Creating a layout for the sidebar, complete with choices and inputs pulled from the data to allow us to take inputs from users
+  sidebarLayout(
+    sidebarPanel(
+      class = "panel",
+      # user picks diamond specs
+      div(class = "card", 
+          div(class = "card-header", "Diamond Characteristics"),
+          selectInput("cut_predict", "Cut:", choices = levels(diamonds_named$cut)),
+          selectInput("color_predict", "Color:", choices = levels(diamonds_named$color)),
+          selectInput("clarity_predict", "Clarity:", choices = levels(diamonds_named$clarity)),
+          numericInput("carat_predict", "Carat:", value = 0.5, min = 0.2, max = 5, step = 0.01)
+      ),
+      # user picks model
+      div(class = "card", 
+          div(class = "card-header", "Select Model Type"),
+          selectInput("model_type", "Model Type:", 
+                      choices = names(r2_values),
+                      selected = "Linear Regression")
+      ),
+
+      # only want confidence interval for linear/polynomial
+
+      #Adding a conditional panel that lets users select a confidence level if they pick a certain type of compatible regression.
+
+      conditionalPanel(
+        condition = "input.model_type == 'Linear Regression' || input.model_type == 'Polynomial Regression'",
+        sliderInput(
+          "conf_level", "Confidence level:",
+          min = 0.5, max = 0.99, value = 0.95, step = 0.01
+        )
+      ),
+
+      #Enter buttons
+      actionButton("predictButton", "Predict Price",
+                   style = "background:transparent; border:2px solid #007BFF; color:#007BFF; margin-bottom:1rem;"),
+      actionButton("infoButton", "More Info About Variables",
+                   style = "background:transparent; border:2px solid #007BFF; color:#007BFF; margin-bottom:1rem;")
+    ),
+
+    #The main panel for displaying stuff
+    mainPanel(
+      class = "container",
+      h1("Diamond Price Prediction App"),
+      textOutput("predictedPrice"), #Prediction
+      textOutput("r2Text"), #R2 score
+      div(class = "predictionPlot", plotOutput("predictionPlot")) #Show regression plot
+    )
+  )
+)
+
+#Creating the service side
+server <- function(input, output) {
+  # grab inputs when button clicked
+  predict_inputs <- eventReactive(input$predictButton, {
+    list(
+      cut     = input$cut_predict,
+      color   = input$color_predict,
+      clarity = input$clarity_predict,
+      carat   = input$carat_predict,
+      model   = input$model_type
+    )
+  })
+  # calculate the predicted price based on chosen model
+  predicted_price <- eventReactive(input$predictButton, {
+    inp <- predict_inputs()
+    # build a tiny df for predict()
+    df <- data.frame(
+      cut     = factor(inp$cut,    levels = levels(diamonds_named$cut)),
+      color   = factor(inp$color,  levels = levels(diamonds_named$color)),
+      clarity = factor(inp$clarity,levels = levels(diamonds_named$clarity)),
+      carat   = inp$carat
+    )
+    df$carat2 <- df$carat^2 # only poly needs this
+    x_new     <- model.matrix(~ cut + color + clarity + carat, data = df)[, -1]
+
+    #Allowing switching between models
+    switch(inp$model,
+      "Linear Regression"     = predict(lm_model, newdata = df),
+      "Polynomial Regression" = predict(poly_model, newdata = df),
+      "Ridge Regression"      = as.numeric(predict(ridge_model, newx = x_new, s = "lambda.min")),
+      "Lasso Regression"      = as.numeric(predict(lasso_model, newx = x_new, s = "lambda.min")),
+      "Elastic Net"           = as.numeric(predict(elastic_net_model, newx = x_new, s = "lambda.min"))
+    )
+  })
+
+  # build a grid for plotting line + intervals
+
+  fit_df <- eventReactive(input$predictButton, {
+    inp <- predict_inputs()
+    grid <- seq(0.2, 5, length.out = 100)
+    df <- data.frame(
+      cut     = factor(inp$cut, levels = levels(diamonds_named$cut)),
+      color   = factor(inp$color, levels = levels(diamonds_named$color)),
+      clarity = factor(inp$clarity, levels = levels(diamonds_named$clarity)),
+      carat   = grid
+    )
+    df$carat2 <- df$carat^2
+    xg <- model.matrix(~ cut + color + clarity + carat, data = df)[, -1]
+    if (inp$model %in% c("Linear Regression", "Polynomial Regression")) {
+      # prediction intervals if for linear regression or polynomial model
+      fit_obj <- if (inp$model == "Linear Regression") lm_model else poly_model
+      ci <- predict(fit_obj, newdata = df, interval = "prediction", level = input$conf_level)
+      data.frame(carat = grid, fit = ci[,"fit"], lwr = ci[,"lwr"], upr = ci[,"upr"])
+    } else {
+      preds <- switch(inp$model,
+        "Ridge Regression" = as.numeric(predict(ridge_model, newx = xg, s = "lambda.min")),
+        "Lasso Regression" = as.numeric(predict(lasso_model, newx = xg, s = "lambda.min")),
+        "Elastic Net"      = as.numeric(predict(elastic_net_model, newx = xg, s = "lambda.min"))
+      )
+      data.frame(carat = grid, fit = preds, lwr = preds, upr = preds)
+    }
+  })
+
+
+  #Outputting a predicted price
+
+  output$predictedPrice <- renderText({
+    price <- predicted_price()
+    paste0("The predicted price is: $", round(price, 2))
+  })
+
+  #Outputting a predicted r^2
+
+  output$r2Text <- renderText({
+    inp <- predict_inputs()
+    r2 <- r2_values[[inp$model]]
+    paste0("R² for ", inp$model, ": ", round(r2, 4))
+  })
+
+
+  #Rendering a plot for the outputted regression line and plot
+
+  output$predictionPlot <- renderPlot({
+    df_line <- fit_df()
+    inp <- predict_inputs()
+    pred_val <- predicted_price()
+    #Creating the different parts of the regression line output
+    ggplot() +
+      geom_point(data = diamonds_named, aes(x = carat, y = price), alpha = 0.2, color = "gray") +
+      geom_ribbon(data = df_line, aes(x = carat, ymin = lwr, ymax = upr), fill = "blue", alpha = 0.15) +
+      geom_line(data = df_line, aes(x = carat, y = fit), size = 1) +
+      annotate("point", x = inp$carat, y = pred_val, color = "red", size = 4) +
+      labs(title = paste("Predicted Price Using", inp$model), x = "Carat", y = "Price ($)") +
+      theme_minimal()
+  })
+
+
+  #Creating a more info button for interested users.
+
+  observeEvent(input$infoButton, {
+    showModal(modalDialog(
+      title = "Variable Dictionary", size = "l", easyClose = TRUE,
+      card_layout("Cut", "refers to how well the diamond has been shaped and faceted. A better cut enhances the diamond's brilliance and overall appearance.", 
+        "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.suratdiamond.com%2Fblog%2Fwp-content%2Fuploads%2F2021%2F02%2Fbrilliance-diamond-cut-chart.webp&f=1&nofb=1"),
+      card_layout("Color", "refers to the absence of color in the diamond. The less color, the higher the value.", 
+        "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.brides.com%2Fthmb%2FGBtDWdJwsYmu17LqrVGm2lR49nU%3D%2F1500x0%2Ffilters%3Ano_upscale()%3Amax_bytes(150000)%3Astrip_icc()%2Fdiamond-color-chart-5093397_horizontal-b8d3872096fd47c78d244d40cc920099.png&f=1&nofb=1"),
+      card_layout("Clarity", "measures the presence of internal or external imperfections. A clearer diamond is more valuable.", 
+        "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.blog1.trymintly.com%2Fwp-content%2Fuploads%2F2022%2F12%2Fdiamondbuzz.blog_.jpg&f=1&nofb=1"),
+      card_layout("Carat", "measures the weight of the diamond. One carat is equivalent to 0.2 grams.", 
+        "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.diamondimports.com.au%2Fskin1%2Fimages%2Froundcarat.jpg&f=1&nofb=1"),
+      footer = modalButton("Close")
+    ))
+  })
+}
+
+#Putting it all together.
+shinyApp(ui = ui, server = server)
