@@ -1,1 +1,1 @@
-This project was built as in Spring of 2025 using R, ShinyR, and Quarto.
+This project was built as in Spring of 2025 using R, ShinyR, and Quarto. It works with R's diamonds dataset (~54,000 diamonds) and allows users to input various features about a prospective diamond and receive a price prediction and information about similar diamonds
